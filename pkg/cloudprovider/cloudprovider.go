@@ -58,6 +58,7 @@ func NewCloudProvider(configFile, userAssignedMSIClientID string) (c *Client, e 
 		if err != nil {
 			return nil, fmt.Errorf("Get service principle token error: %v", err)
 		}
+		glog.Info("use user assigned managed identity to assign/remove VM/VMSS identities")
 	} else {
 		oauthConfig, _ := adal.NewOAuthConfig(azureEnv.ActiveDirectoryEndpoint, azureConfig.TenantID)
 		if err != nil {
@@ -74,6 +75,7 @@ func NewCloudProvider(configFile, userAssignedMSIClientID string) (c *Client, e 
 			glog.Errorf("Get service principle token error: %+v", err)
 			return nil, err
 		}
+		glog.Info("use k8s cluster service principal to assign/remove VM/VMSS identities")
 	}
 	extClient := compute.NewVirtualMachineExtensionsClient(azureConfig.SubscriptionID)
 	extClient.BaseURI = azure.PublicCloud.ResourceManagerEndpoint
