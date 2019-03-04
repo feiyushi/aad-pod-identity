@@ -11,8 +11,8 @@ const (
 	resourceManagerEndpoint = "https://management.azure.com/"
 )
 
-// GetServicePrincipalTokenFromMSIWithUserAssignedID return the token for the assigned user
-func GetServicePrincipalTokenFromMSIWithUserAssignedID(clientID, resource string) (*adal.Token, error) {
+// GetSptFromMSIWithUserAssignedID returns the service principal token for the assigned user
+func GetSptFromMSIWithUserAssignedID(clientID, resource string) (*adal.ServicePrincipalToken, error) {
 	// Get the MSI endpoint accoriding with the OS (Linux/Windows)
 	msiEndpoint, err := adal.GetMSIVMEndpoint()
 	if err != nil {
@@ -27,6 +27,15 @@ func GetServicePrincipalTokenFromMSIWithUserAssignedID(clientID, resource string
 	}
 	// Evectively acqurie the token
 	err = spt.Refresh()
+	if err != nil {
+		return nil, err
+	}
+	return spt, nil
+}
+
+// GetServicePrincipalTokenFromMSIWithUserAssignedID return the token for the assigned user
+func GetServicePrincipalTokenFromMSIWithUserAssignedID(clientID, resource string) (*adal.Token, error) {
+	spt, err := GetSptFromMSIWithUserAssignedID(clientID, resource)
 	if err != nil {
 		return nil, err
 	}

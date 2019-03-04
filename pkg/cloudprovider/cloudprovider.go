@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/Azure/aad-pod-identity/pkg/auth"
 	config "github.com/Azure/aad-pod-identity/pkg/config"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/go-autorest/autorest"
@@ -33,7 +34,7 @@ type ClientInt interface {
 }
 
 // NewCloudProvider returns a azure cloud provider client
-func NewCloudProvider(configFile string) (c *Client, e error) {
+func NewCloudProvider(configFile, userAssignedMSIClientID string) (c *Client, e error) {
 	bytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		glog.Errorf("Read file (%s) error: %+v", configFile, err)
@@ -49,22 +50,31 @@ func NewCloudProvider(configFile string) (c *Client, e error) {
 		glog.Errorf("Get cloud env error: %+v", err)
 		return nil, err
 	}
-	oauthConfig, _ := adal.NewOAuthConfig(azureEnv.ActiveDirectoryEndpoint, azureConfig.TenantID)
-	if err != nil {
-		return nil, fmt.Errorf("creating the OAuth config: %v", err)
+	var spt *adal.ServicePrincipalToken
+	// if userAssignedMSIClientID is set, use this identity to assigned VM/VMSS identity assignment and removal,
+	// or else default to use cluster service principal
+	if userAssignedMSIClientID != "" {
+		spt, err = auth.GetSptFromMSIWithUserAssignedID(userAssignedMSIClientID, azureEnv.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("Get service principle token error: %v", err)
+		}
+	} else {
+		oauthConfig, _ := adal.NewOAuthConfig(azureEnv.ActiveDirectoryEndpoint, azureConfig.TenantID)
+		if err != nil {
+			return nil, fmt.Errorf("creating the OAuth config: %v", err)
+		}
+		//glog.Info("%+v\n", oauthConfig)
+		spt, err = adal.NewServicePrincipalToken(
+			*oauthConfig,
+			azureConfig.ClientID,
+			azureConfig.ClientSecret,
+			azureEnv.ResourceManagerEndpoint,
+		)
+		if err != nil {
+			glog.Errorf("Get service principle token error: %+v", err)
+			return nil, err
+		}
 	}
-	//glog.Info("%+v\n", oauthConfig)
-	spt, err := adal.NewServicePrincipalToken(
-		*oauthConfig,
-		azureConfig.ClientID,
-		azureConfig.ClientSecret,
-		azureEnv.ResourceManagerEndpoint,
-	)
-	if err != nil {
-		glog.Errorf("Get service principle token error: %+v", err)
-		return nil, err
-	}
-
 	extClient := compute.NewVirtualMachineExtensionsClient(azureConfig.SubscriptionID)
 	extClient.BaseURI = azure.PublicCloud.ResourceManagerEndpoint
 	extClient.Authorizer = autorest.NewBearerAuthorizer(spt)

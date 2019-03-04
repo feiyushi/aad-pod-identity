@@ -11,15 +11,17 @@ import (
 )
 
 var (
-	kubeconfig      string
-	cloudconfig     string
-	forceNamespaced bool
+	kubeconfig              string
+	cloudconfig             string
+	userAssignedMSIClientID string
+	forceNamespaced         bool
 )
 
 func main() {
 	defer glog.Flush()
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to the kube config")
 	flag.StringVar(&cloudconfig, "cloudconfig", "", "Path to cloud config e.g. Azure.json file")
+	flag.StringVar(&userAssignedMSIClientID, "userAssignedMSIClientID", "", "Resource ID of the user assigned managed identity")
 	flag.BoolVar(&forceNamespaced, "forceNamespaced", false, "Forces namespaced identities, binding, and assignment")
 	flag.Parse()
 	if cloudconfig == "" {
@@ -36,7 +38,7 @@ func main() {
 	}
 
 	forceNamespaced = forceNamespaced || "true" == os.Getenv("FORCENAMESPACED")
-	micClient, err := mic.NewMICClient(cloudconfig, config, forceNamespaced)
+	micClient, err := mic.NewMICClient(cloudconfig, userAssignedMSIClientID, config, forceNamespaced)
 	if err != nil {
 		glog.Fatalf("Could not get the MIC client: %+v", err)
 	}
