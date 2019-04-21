@@ -10,7 +10,7 @@ mic:
   adminClientID: "1d59908a-66f5-4a41-ae9a-8a4da14c6869"
 
 azureIdentity:
-  enabled: false # enabled/disable deployment of azure identity and binding
+  enabled: true # enabled/disable deployment of azure identity and binding
   name: "azure-identity"
   type: 0 # type 0: MSI, type 1: Service Principal
   resourceID: "/subscriptions/27b750cd-ed43-42fd-9044-8d75e124ae55/resourceGroups/feshi-k8s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/demoapp" # /subscriptions/subscription-id/resourcegroups/resource-group/providers/Microsoft.ManagedIdentity/userAssignedIdentities/identity-name

@@ -4,5 +4,5 @@ metadata:
  name: demo-aad1
 spec:
  type: 0
- ResourceID: RESOURCE_ID
- ClientID: CLIENT_ID 
+ ResourceID: /subscriptions/27b750cd-ed43-42fd-9044-8d75e124ae55/resourceGroups/feshi-k8s/providers/Microsoft.ManagedIdentity/userAssignedIdentities/demoapp
+ ClientID: 02de69eb-2f0b-409f-a667-8d5dc7e10855 
