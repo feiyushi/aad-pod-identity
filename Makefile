@@ -6,11 +6,12 @@ MIC_BINARY_NAME := mic
 DEMO_BINARY_NAME := demo
 
 DEFAULT_VERSION := 0.0.0-dev
+VERSION ?= git-$(shell git rev-parse --short HEAD)
 IDENTITY_VALIDATOR_BINARY_NAME := identityvalidator
-NMI_VERSION ?= $(DEFAULT_VERSION)
-MIC_VERSION ?= $(DEFAULT_VERSION)
-DEMO_VERSION ?= $(DEFAULT_VERSION)
-IDENTITY_VALIDATOR_VERSION ?= $(DEFAULT_VERSION)
+NMI_VERSION ?= $(VERSION)
+MIC_VERSION ?= $(VERSION)
+DEMO_VERSION ?= $(VERSION)
+IDENTITY_VALIDATOR_VERSION ?= $(VERSION)
 
 VERSION_VAR := $(REPO_PATH)/version.Version
 GIT_VAR := $(REPO_PATH)/version.GitCommit
@@ -34,7 +35,9 @@ GO_BUILD_OPTIONS := --tags "netgo osusergo"  -ldflags "-s -X $(VERSION_VAR)=$(NM
 E2E_TEST_OPTIONS := -count=1 -v
 
 # useful for other docker repos
-REGISTRY_NAME ?= upstreamk8sci
+REGISTRY_NAME ?= podid
+REGISTRY_RESOURCE_GROUP ?= feshi-k8s
+REGISTRY_SUBSCRIPTION ?= 27b750cd-ed43-42fd-9044-8d75e124ae55
 REGISTRY ?= $(REGISTRY_NAME).azurecr.io
 REPO_PREFIX ?= k8s/aad-pod-identity
 NMI_IMAGE ?= $(REPO_PREFIX)/$(NMI_BINARY_NAME):$(NMI_VERSION)
@@ -105,8 +108,12 @@ image-demo:
 image-identity-validator:
 	docker build -t $(REGISTRY)/$(IDENTITY_VALIDATOR_IMAGE) --build-arg IDENTITY_VALIDATOR_VERSION="$(IDENTITY_VALIDATOR_VERSION)" --target=identityvalidator .
 
-.PHONY: imag
+.PHONY: image
 image:image-nmi image-mic image-demo image-identity-validator
+
+.PHONY: registry-login
+registry-login:
+	az acr login --name ${REGISTRY_NAME} --resource-group ${REGISTRY_RESOURCE_GROUP} --subscription ${REGISTRY_SUBSCRIPTION}
 
 .PHONY: push-nmi
 push-nmi: validate-version-NMI
@@ -129,7 +136,7 @@ push-identity-validator: validate-version-IDENTITY_VALIDATOR
 	docker push $(REGISTRY)/$(IDENTITY_VALIDATOR_IMAGE)
 
 .PHONY: push
-push: push-nmi push-mic push-demo push-identity-validator
+push: registry-login push-nmi push-mic push-demo push-identity-validator
 
 .PHONY: e2e
 e2e:
@@ -146,3 +153,4 @@ validate-version: validate-version-NMI validate-version-MIC validate-version-IDE
 validate-version-%:
 	@echo $(*)_VERSION=$($(*)_VERSION)
 	@DEFAULT_VERSION=$(DEFAULT_VERSION) CHECK_VERSION="$($(*)_VERSION)" scripts/validate_version.sh
+	
