@@ -190,6 +190,7 @@ spec:
         args:
           - mic
           - "--cloudconfig=/etc/kubernetes/azure.json"
+          - "--userAssignedMSIClientID=1d59908a-66f5-4a41-ae9a-8a4da14c6869"
           - "--logtostderr"
         volumeMounts:
         - name: k8s-azure-file
